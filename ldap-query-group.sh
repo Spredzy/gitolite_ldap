@@ -28,18 +28,17 @@
 # this script is used to perform ldap querys by giving one argument:
 # - <arg1> the user UID for ldap search query
 #
-# NOTICE: This script requires ldap-utils and sed to be installed to the system.
+# NOTICE: This script requires ldap-utils to be installed to the system.
 #
 
 # Script requires user UID as the only parameter
 #
-if [ $# -ne 2 ]
+if [ $# -ne 1 ]
 then
         echo "ldap-query.sh requires one argument, user's uid"
         exit 1
 fi
 uid_param="${1}"
-search_filter="${2}"
 
 # Set needed LDAP search tool options for the query
 ldap_host="localhost"
@@ -52,14 +51,10 @@ ldap_scope="subtree"
 ldap_options="-h ${ldap_host} -x -D ${ldap_binddn} -w ${ldap_bindpw} -b ${ldap_searchbase} -s ${ldap_scope}"
 
 # Construct the search filter for the LDAP query for the given UID
-ldap_filter="(&(objectClass=${search_filter})(uid=${uid_param}))"
-
-# Construct return attribute list for LDAP query result
-ldap_attr="gidNumber"
+ldap_filter="(&(objectClass=posixGroup)(memberUid=${uid_param}))"
 
 # Execute the actual LDAP search to get groups for the given UID
-ldap_result=$(ldapsearch ${ldap_options} -LLL ${ldap_filter} ${ldap_attr} | grep "${ldap_attr}:" | cut -d' ' -f 2)
-ldap_result2=$(ldapsearch ${ldap_options} -LLL "(&(objectClass=posixAccount)(${ldap_attr}=${ldap_result}))" uid | grep 'uid:' | cut -d' ' -f2)
+ldap_result=$(ldapsearch ${ldap_options} -LLL "${ldap_filter}" cn | grep 'cn:' | cut -d' ' -f2)
 
 # Return group names for given user UID
-echo $ldap_result2
+echo $ldap_result
